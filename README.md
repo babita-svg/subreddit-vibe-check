@@ -9,7 +9,7 @@ Built as a submission for the **Full Stack Developer Internship Assignment**.
 ## 🚀 Live Demo & Repository
 
 - **Repository**: [https://github.com/babita-svg/subreddit-vibe-check](https://github.com/babita-svg/subreddit-vibe-check)
-- **Author**: Babita
+- **Author**: SARTHAK
 
 ---
 
