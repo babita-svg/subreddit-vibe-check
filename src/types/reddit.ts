@@ -6,6 +6,14 @@ export type SentimentLabel = 'Positive' | 'Neutral' | 'Negative';
 
 export type OverallVibeType = 'Positive' | 'Neutral' | 'Negative';
 
+export type RedditErrorCode =
+  | 'NOT_FOUND'
+  | 'FORBIDDEN'
+  | 'RATE_LIMITED'
+  | 'EMPTY'
+  | 'NETWORK'
+  | 'UNKNOWN';
+
 export interface PostSentiment {
   score: number;
   comparative: number;

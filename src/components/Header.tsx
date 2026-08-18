@@ -50,7 +50,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* GitHub Repo Link */}
           <a
             id="github-repo-link"
-            href="https://github.com/your-username/subreddit-vibe-check"
+            href="https://github.com/babita-svg/subreddit-vibe-check"
             target="_blank"
             rel="noopener noreferrer"
             className="p-2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors mr-1"

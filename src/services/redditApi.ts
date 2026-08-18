@@ -1,11 +1,11 @@
-import { RedditPost } from '../types/reddit';
+import { RedditPost, RedditErrorCode } from '../types/reddit';
 import { normalizeSubreddit, analyzePostSentiment } from '../utils/sentiment';
 
 export class RedditApiError extends Error {
   statusCode?: number;
-  code: 'NOT_FOUND' | 'FORBIDDEN' | 'RATE_LIMITED' | 'EMPTY' | 'NETWORK' | 'UNKNOWN';
+  code: RedditErrorCode;
 
-  constructor(message: string, code: 'NOT_FOUND' | 'FORBIDDEN' | 'RATE_LIMITED' | 'EMPTY' | 'NETWORK' | 'UNKNOWN', statusCode?: number) {
+  constructor(message: string, code: RedditErrorCode, statusCode?: number) {
     super(message);
     this.name = 'RedditApiError';
     this.code = code;
@@ -58,13 +58,17 @@ function cleanThumbnail(thumb?: string): string | null {
 
 /**
  * Dedicated API service to fetch and normalize top 50 HOT posts from Reddit.
- * Adheres strictly to the Reddit hot endpoint specification.
+ * Adheres strictly to the Reddit hot endpoint specification:
+ * https://www.reddit.com/r/{subreddit}/hot.json?limit=50&raw_json=1
  */
 export async function fetchSubredditHotPosts(rawSubredditInput: string): Promise<RedditPost[]> {
   const normalized = normalizeSubreddit(rawSubredditInput);
 
   if (!normalized) {
-    throw new RedditApiError('Please enter a valid subreddit name.', 'NOT_FOUND');
+    throw new RedditApiError(
+      "We couldn't find that subreddit. Check the name and try again.",
+      'NOT_FOUND'
+    );
   }
 
   // Target endpoint as specified in requirements
@@ -98,7 +102,7 @@ export async function fetchSubredditHotPosts(rawSubredditInput: string): Promise
 
     if (response.status === 403) {
       throw new RedditApiError(
-        'This subreddit is private, restricted, or banned.',
+        'This subreddit is unavailable or restricted.',
         'FORBIDDEN',
         403
       );
@@ -106,31 +110,33 @@ export async function fetchSubredditHotPosts(rawSubredditInput: string): Promise
 
     if (response.status === 429) {
       throw new RedditApiError(
-        'Reddit API rate limit exceeded. Please wait a moment and try again.',
+        'Reddit is temporarily rate-limiting requests. Please try again shortly.',
         'RATE_LIMITED',
         429
       );
     }
 
     if (response.ok) {
-      rawData = await response.json();
+      rawData = (await response.json()) as RawRedditResponse;
     } else {
       fetchFailed = true;
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err instanceof RedditApiError) {
       throw err;
     }
     fetchFailed = true;
   }
 
-  // If primary fetch was blocked by CORS or network, attempt fallbacks
+  // If primary fetch was blocked by CORS or network, attempt secondary endpoints
   if (fetchFailed || !rawData) {
     for (const url of fallbackUrls) {
       try {
         const fallbackRes = await fetch(url);
+        lastStatus = fallbackRes.status;
+
         if (fallbackRes.ok) {
-          rawData = await fallbackRes.json();
+          rawData = (await fallbackRes.json()) as RawRedditResponse;
           break;
         } else if (fallbackRes.status === 404) {
           throw new RedditApiError(
@@ -140,19 +146,25 @@ export async function fetchSubredditHotPosts(rawSubredditInput: string): Promise
           );
         } else if (fallbackRes.status === 403) {
           throw new RedditApiError(
-            'This subreddit is private, restricted, or banned.',
+            'This subreddit is unavailable or restricted.',
             'FORBIDDEN',
             403
           );
+        } else if (fallbackRes.status === 429) {
+          throw new RedditApiError(
+            'Reddit is temporarily rate-limiting requests. Please try again shortly.',
+            'RATE_LIMITED',
+            429
+          );
         }
-      } catch (fbErr: any) {
+      } catch (fbErr: unknown) {
         if (fbErr instanceof RedditApiError) throw fbErr;
         // Continue to next fallback
       }
     }
   }
 
-  // Check if all attempts failed
+  // Validate response payload
   if (!rawData || !rawData.data || !Array.isArray(rawData.data.children)) {
     if (lastStatus === 404) {
       throw new RedditApiError(
@@ -161,9 +173,16 @@ export async function fetchSubredditHotPosts(rawSubredditInput: string): Promise
         404
       );
     }
+    if (lastStatus === 403) {
+      throw new RedditApiError(
+        'This subreddit is unavailable or restricted.',
+        'FORBIDDEN',
+        403
+      );
+    }
     if (lastStatus === 429) {
       throw new RedditApiError(
-        'Reddit API rate limit exceeded. Please wait a moment and try again.',
+        'Reddit is temporarily rate-limiting requests. Please try again shortly.',
         'RATE_LIMITED',
         429
       );
@@ -181,7 +200,7 @@ export async function fetchSubredditHotPosts(rawSubredditInput: string): Promise
     throw new RedditApiError('This subreddit returned no hot posts.', 'EMPTY');
   }
 
-  // Filter out any non-post entries and cap strictly at top 50
+  // Filter out any invalid items and cap strictly at top 50
   const normalizedPosts: RedditPost[] = children
     .filter((child) => child && child.data && child.data.id)
     .slice(0, 50)

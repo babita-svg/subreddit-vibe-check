@@ -8,8 +8,8 @@ Built as a submission for the **Full Stack Developer Internship Assignment**.
 
 ## 🚀 Live Demo & Repository
 
-- **Repository Name**: `subreddit-vibe-check`
-- **Demo URL**: [https://subreddit-vibe-check.vercel.app](https://subreddit-vibe-check.vercel.app) *(or your deployed Vercel URL)*
+- **Repository**: [https://github.com/babita-svg/subreddit-vibe-check](https://github.com/babita-svg/subreddit-vibe-check)
+- **Author**: Babita
 
 ---
 
@@ -44,7 +44,6 @@ Built as a submission for the **Full Stack Developer Internship Assignment**.
 | **Sentiment Engine** | [`sentiment`](https://www.npmjs.com/package/sentiment) (AFINN-165 Lexicon) |
 | **Visualizations** | [Recharts](https://recharts.org/) |
 | **Icons** | [Lucide React](https://lucide.dev/) |
-| **Animation** | [Motion](https://motion.dev/) |
 
 ---
 
@@ -139,7 +138,7 @@ src/
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/your-username/subreddit-vibe-check.git
+git clone https://github.com/babita-svg/subreddit-vibe-check.git
 cd subreddit-vibe-check
 ```
 

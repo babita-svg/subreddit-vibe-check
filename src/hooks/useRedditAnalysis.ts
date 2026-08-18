@@ -56,7 +56,7 @@ export function useRedditAnalysis() {
         setPosts(fetchedPosts);
         setSummary(stats);
         saveRecentSearch(normalized);
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (err instanceof RedditApiError) {
           setError(err);
         } else {
